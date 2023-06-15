@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_reactive_ble/src/connected_device_operation.dart';
-import 'package:flutter_reactive_ble/src/debug_logger.dart';
+import 'package:flutter_reactive_ble/src/debug_logger.dart' as debug_logger;
 import 'package:flutter_reactive_ble/src/device_connector.dart';
 import 'package:flutter_reactive_ble/src/device_scanner.dart';
 import 'package:flutter_reactive_ble/src/discovered_devices_registry.dart';
@@ -24,7 +24,7 @@ class FlutterReactiveBle {
     required DeviceScanner deviceScanner,
     required DeviceConnector deviceConnector,
     required ConnectedDeviceOperation connectedDeviceOperation,
-    required Logger debugLogger,
+    required debug_logger.Logger debugLogger,
     required Future<void> initialization,
     required ReactiveBlePlatform reactiveBlePlatform,
   }) {
@@ -59,8 +59,7 @@ class FlutterReactiveBle {
   BleStatus get status => _status;
 
   /// A stream providing connection updates for all the connected BLE devices.
-  Stream<ConnectionStateUpdate> get connectedDeviceStream =>
-      Repeater(onListenEmitFrom: () async* {
+  Stream<ConnectionStateUpdate> get connectedDeviceStream => Repeater(onListenEmitFrom: () async* {
         await initialize();
         yield* _deviceConnector.deviceConnectionStateUpdateStream;
       }).stream.asBroadcastStream()
@@ -90,7 +89,7 @@ class FlutterReactiveBle {
   late DeviceConnector _deviceConnector;
   late ConnectedDeviceOperation _connectedDeviceOperator;
   late DeviceScanner _deviceScanner;
-  late Logger _debugLogger;
+  late debug_logger.Logger _debugLogger;
 
   /// Initializes this [FlutterReactiveBle] instance and its platform-specific
   /// counterparts.
@@ -99,13 +98,12 @@ class FlutterReactiveBle {
   /// operation is triggered.
   Future<void> initialize() async {
     if (_initialization == null) {
-      _debugLogger = DebugLogger(
+      _debugLogger = debug_logger.DebugLogger(
         'REACTIVE_BLE',
         print,
       );
 
-      ReactiveBlePlatform.instance =
-          const ReactiveBleMobilePlatformFactory().create();
+      ReactiveBlePlatform.instance = const ReactiveBleMobilePlatformFactory().create();
 
       _blePlatform = ReactiveBlePlatform.instance;
 
@@ -152,8 +150,7 @@ class FlutterReactiveBle {
   /// Be aware that a read request could be satisfied by a notification delivered
   /// for the same characteristic via [characteristicValueStream] before the actual
   /// read response arrives (due to the design of iOS BLE API).
-  Future<List<int>> readCharacteristic(
-      QualifiedCharacteristic characteristic) async {
+  Future<List<int>> readCharacteristic(QualifiedCharacteristic characteristic) async {
     await initialize();
     return _connectedDeviceOperator.readCharacteristic(characteristic);
   }
@@ -207,12 +204,10 @@ class FlutterReactiveBle {
   /// Requests for a connection parameter update on the connected device.
   ///
   /// Always completes with an error on iOS, as there is no way (and no need) to perform this operation on iOS.
-  Future<void> requestConnectionPriority(
-      {required String deviceId, required ConnectionPriority priority}) async {
+  Future<void> requestConnectionPriority({required String deviceId, required ConnectionPriority priority}) async {
     await initialize();
 
-    return _connectedDeviceOperator.requestConnectionPriority(
-        deviceId, priority);
+    return _connectedDeviceOperator.requestConnectionPriority(deviceId, priority);
   }
 
   /// Scan for BLE peripherals advertising the services specified in [withServices]
@@ -258,8 +253,7 @@ class FlutterReactiveBle {
       initialize().asStream().asyncExpand(
             (_) => _deviceConnector.connect(
               id: id,
-              servicesWithCharacteristicsToDiscover:
-                  servicesWithCharacteristicsToDiscover,
+              servicesWithCharacteristicsToDiscover: servicesWithCharacteristicsToDiscover,
               connectionTimeout: connectionTimeout,
             ),
           );
@@ -288,8 +282,7 @@ class FlutterReactiveBle {
               id: id,
               withServices: withServices,
               prescanDuration: prescanDuration,
-              servicesWithCharacteristicsToDiscover:
-                  servicesWithCharacteristicsToDiscover,
+              servicesWithCharacteristicsToDiscover: servicesWithCharacteristicsToDiscover,
               connectionTimeout: connectionTimeout,
             ),
           );
@@ -297,17 +290,14 @@ class FlutterReactiveBle {
   /// Performs service discovery on the peripheral and returns the discovered services.
   ///
   /// When discovery fails this method throws an [Exception].
-  Future<List<DiscoveredService>> discoverServices(String deviceId) =>
-      _connectedDeviceOperator.discoverServices(deviceId);
+  Future<List<DiscoveredService>> discoverServices(String deviceId) => _connectedDeviceOperator.discoverServices(deviceId);
 
   /// Clears GATT attribute cache on Android using undocumented API. Completes with an error in case of a failure.
   ///
   /// Always completes with an error on iOS, as there is no way (and no need) to perform this operation on iOS.
   ///
   /// The connection may need to be reestablished after successful GATT attribute cache clearing.
-  Future<void> clearGattCache(String deviceId) => _blePlatform
-      .clearGattCache(deviceId)
-      .then((info) => info.dematerialize());
+  Future<void> clearGattCache(String deviceId) => _blePlatform.clearGattCache(deviceId).then((info) => info.dematerialize());
 
   /// Subscribes to updates from the characteristic specified.
   ///
